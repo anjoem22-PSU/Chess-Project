@@ -1,10 +1,9 @@
 import pygame
 import board
-import pieces
 
-
-def main(name):
-    pass
+def main():
+    game = board.Board()
+    print(game)
 
 
 if __name__ == '__main__':

@@ -44,15 +44,8 @@ class Board:
             print("This is not a cardinal move")
             return False
 
-        if dx < 0:
-            pass
-        if dy < 0:
-            pass
+        # Stuff
 
-        if dx != 0:
-            pass
-        else:
-            pass
 
     def pawn_move(self, p1, p2):
         pass
@@ -73,6 +66,10 @@ class Board:
         pass
 
     def attempt_move(self, piece, position):
+        if piece == position:
+            print("There was no move made!")
+            return False
+
         x1, y1 = piece[0], piece[1]
         x2, y2 = position[0], position[1]
 

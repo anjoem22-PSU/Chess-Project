@@ -34,6 +34,26 @@ class Board:
         w_row[6] = "wn"
         w_row[7] = "wr"
 
+    def diagonal_open(self, p1, p2):
+        pass
+
+    def cardinal_open(self, p1, p2):
+        dx = p2[0] - p1[0]
+        dy = p2[1] - p1[1]
+        if dx != 0 and dy != 0:
+            print("This is not a cardinal move")
+            return False
+
+        if dx < 0:
+            pass
+        if dy < 0:
+            pass
+
+        if dx != 0:
+            pass
+        else:
+            pass
+
     def pawn_move(self, p1, p2):
         pass
 
@@ -58,8 +78,10 @@ class Board:
 
         p_value = self.__board[y1][x1]
         if p_value == "__":
+            print("Cannot move an empty tile")
             return False
         if (self.__white_turn and p_value[0] == "b") or (not self.__white_turn and p_value[0] == "w"):
+            print("Cannot move opponent's piece")
             return False
 
     def __str__(self):

@@ -34,18 +34,43 @@ class Board:
         w_row[6] = "wn"
         w_row[7] = "wr"
 
-    def diagonal_open(self, p1, p2):
-        pass
-
-    def cardinal_open(self, p1, p2):
+    # Checks if spaces between (x0,y0) and (x1,y1) are occupied
+    # when diagonal_switch is false, the move must be cardinal (straight up/down/left/right)
+    # otherwise the move must be diagonal
+    def linear_open(self, p1, p2, diagonal_switch=False):
         dx = p2[0] - p1[0]
         dy = p2[1] - p1[1]
-        if dx != 0 and dy != 0:
-            print("This is not a cardinal move")
-            return False
 
-        # Stuff
+        if not diagonal_switch:
+            if dx != 0 and dy != 0:
+                print("A cardinal move was not made!")
+                return False
+        else:
+            if not (dx == dy):
+                print("A diagonal move was not made!")
+                return False
 
+        distance = 0
+        x_step = 0
+        y_step = 0
+
+        if dx != 0:
+            distance = dx - 1
+            x_step = 1 if dx > 0 else -1
+
+        if dy != 0:
+            distance = dy - 1
+            y_step = 1 if dy > 0 else -1
+
+        current_pos = [p1[0], p1[1]]
+        for _ in range(distance):
+            current_pos[0] += x_step[0]
+            current_pos[1] += y_step[1]
+            if self.__board[current_pos[1]][current_pos[0]] != "__":
+                # Something was in the way!
+                return False
+
+        return True
 
     def pawn_move(self, p1, p2):
         pass

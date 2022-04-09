@@ -69,26 +69,92 @@ class Board:
             if self.__board[current_pos[1]][current_pos[0]] != "__":
                 # Something was in the way!
                 return False
-
         return True
 
     def pawn_move(self, p1, p2):
-        pass
+        p1_x, p2_x = p1[0], p2[0]
+        p1_y, p2_y = p1[1], p2[1]
+        
+        # validating moves for white pawn
+        if self.__board[p1_y][p1_x] == "wp":
+            # check whether the p2 square is empty
+            if self.__board[p2_y][p2_x] != "__":
+                # pawns can't move backwards
+                if p2_y >= p1_y:
+                    return False
+                # if the pawn is on the 2nd row, moving two squares forward is valid
+                elif p1_y == 6 and p2_y == p1_y - 2:
+                    return True
+            elif self.__board[p2_y][p2_x][0] == "b":
+                if p2_y == p1_y-1 and (p2_x == p1_x-1 or p2_x == p1_x+1):
+                    return True
+                else: return False
+            else: return False
+        # validating moves for black pawns (follows the same logic as white)
+        if self.__board[p1_y][p1_x] == "bp":
+            # check whether the p2 square is empty
+            if self.__board[p2_y][p2_x] != "__":
+                # pawns can't move backwards
+                if p2_y <= p1_y:
+                    return False
+                # if the pawn is on the 6th row, moving two squares forward is valid
+                elif p1_y == 1 and p2_y == p1_y + 2:
+                    return True
+            # if there's a white piece on any of the forward diagonal squares, the pawn should be able to capture it
+            elif self.__board[p2_y][p2_x][0] == "w":
+                if p2_y == p1_y+1 and (p2_x == p1_x-1 or p2_x == p1_x+1):
+                    return True
+                else: return False
+            else: return False
 
     def queen_move(self, p1, p2):
-        pass
+        # queen can move like a bishop or a rook
+        if self.bishop_move(p1, p2) or self.rook_move(p1, p2):
+            return True
+        else: return False
 
     def king_move(self, p1, p2):
-        pass
+        p1_x, p2_x = p1[0], p2[0]
+        p1_y, p2_y = p1[1], p2[1]
+        #check whether the p2 square is empty or if there's an opposite color piece
+        if self.__board[p2_y][p2_x] == "__" or self.__board[p2_y][p2_x][0] != self.__board[p1_y][p1_x][0]:
+            # the king can move 1 square in any direction
+            if abs(p2_y - p1_y) == 1 or abs(p2_x - p1_x) == 1:
+                return True
+            else: return False
+        else: return False
 
     def rook_move(self, p1, p2):
-        pass
+        p1_x, p2_x = p1[0], p2[0]
+        p1_y, p2_y = p1[1], p2[1]
+        # rook can move vertically or horizontally
+        if p2_x == p1_x or p2_y == p1_y:
+            if self.___board[p2_y][p2_x] == "__" or self.__board[p2_y][p2_x][0] != self.__board[p1_y][p1_x][0]:
+                return True
+            else: return False
+        else: return False
 
     def bishop_move(self, p1, p2):
-        pass
+        p1_x, p2_x = p1[0], p2[0]
+        p1_y, p2_y = p1[1], p2[1]
+        # check whether the p2 square is empty or if there's an opposite color piece
+        if self.__board[p2_y][p2_x] == "__" or self.__board[p2_y][p2_x][0] != self.__board[p1_y][p1_x][0]:
+            # bishop can move in a diagonal
+            if abs(p2_y-p1_y) == abs(p2_x-p1_x):
+                return True
+            else: return False
+        else: return False
 
     def knight_move(self, p1, p2):
-        pass
+        p1_x, p2_x = p1[0], p2[0]
+        p1_y, p2_y = p1[1], p2[1]
+        # check whether the p2 square is empty or if there's an opposite color piece
+        if self.__board[p2_y][p2_x] == "__" or self.__board[p2_y][p2_x][0] != self.__board[p1_y][p1_x][0]:
+            if abs(p2_y - p1_y) == 2 and abs(p2_x-p1_x) == 1:
+                return True
+            elif abs(p2_y-p1_y) == 1 and abs(p2_x-p1_x) == 2:
+                return True
+        else: return False
 
     def attempt_move(self, piece, position):
         if piece == position:

@@ -88,7 +88,7 @@ class Board:
                 if p2_y == p1_y-1 and (p2_x == p1_x-1 or p2_x == p1_x+1):
                     return True
                 else: return False
-            else: return False
+            return True
         # validating moves for black pawns (follows the same logic as white)
         if self.__board[p1_y][p1_x] == "bp":
             # check whether the p2 square is empty
@@ -104,7 +104,7 @@ class Board:
                 if p2_y == p1_y+1 and (p2_x == p1_x-1 or p2_x == p1_x+1):
                     return True
                 else: return False
-            else: return False
+            return True
 
     def queen_move(self, p1, p2):
         # queen can move like a bishop or a rook
@@ -203,10 +203,13 @@ class Board:
         return True
 
     def __str__(self):
-        ret_value = ""
+        ret_value = "\n   0  1  2  3  4  5  6  7\n"
+        i = 0
         for row in self.__board:
+            ret_value += str(i) + " "
             for element in row:
                 ret_value += str(element) + " "
+            i += 1
             ret_value += "\n"
 
         return ret_value

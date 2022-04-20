@@ -74,37 +74,44 @@ class Board:
         p1_x, p2_x = p1[0], p2[0]
         p1_y, p2_y = p1[1], p2[1]
 
-        # validating moves for white pawn
-        if self.__board[p1_y][p1_x] == "wp":
-            # check whether the p2 square is empty
-            if self.__board[p2_y][p2_x] != "__":
-                # pawns can't move backwards
-                if p2_y >= p1_y:
-                    return False
-                # if the pawn is on the 2nd row, moving two squares forward is valid
-                elif p1_y == 6 and p2_y == p1_y - 2:
-                    return True
-            elif self.__board[p2_y][p2_x][0] == "b":
-                if p2_y == p1_y-1 and (p2_x == p1_x-1 or p2_x == p1_x+1):
-                    return True
-                else: return False
-            return True
-        # validating moves for black pawns (follows the same logic as white)
-        if self.__board[p1_y][p1_x] == "bp":
-            # check whether the p2 square is empty
-            if self.__board[p2_y][p2_x] != "__":
-                # pawns can't move backwards
-                if p2_y <= p1_y:
-                    return False
-                # if the pawn is on the 6th row, moving two squares forward is valid
-                elif p1_y == 1 and p2_y == p1_y + 2:
-                    return True
-            # if there's a white piece on any of the forward diagonal squares, the pawn should be able to capture it
-            elif self.__board[p2_y][p2_x][0] == "w":
-                if p2_y == p1_y+1 and (p2_x == p1_x-1 or p2_x == p1_x+1):
-                    return True
-                else: return False
-            return True
+        color = self.__board[p1_y][p1_x][0]        
+        direction = 1 if (color == "b") else -1
+        pawn_rank = 1 if (color == "b") else 6
+        can_boost = (p1_y == pawn_rank)
+
+        dy = p2_y - p1_y
+        dx = p2_x - p1_x
+        
+        if (dy != direction) and not (can_boost and dy == direction * 2):
+            if can_boost:
+                print("Pawn can only move up to two tiles forward")
+            else:
+                print("Pawn can only move one tile forward")
+            return False
+
+        if (dy == direction * 2) and dx != 0:
+            print("Captures can't be made from two tiles away")
+            return False
+
+        p2_piece = self.__board[p2_y][p2_x]
+
+        if dx == 0 and p2_piece != "__":
+            print("Cannot capture with a forward move")
+            return False
+        
+        if abs(dx) == 1 and (p2_piece == "__" or p2_piece[0] == color):
+            if p2_piece == "__":
+                print("Cannot move diagonally into an empty tile")
+            else:
+                print("You were blocked by your own piece")
+            return False
+        
+        if abs(dx) > 1:
+            print("Pawns cannot just slide around like a queen. Behave yourself!")
+            return False
+
+        return True
+
 
     def queen_move(self, p1, p2):
         # queen can move like a bishop or a rook
@@ -186,7 +193,6 @@ class Board:
 
         p_type = p_value[1]
         if not self.piece_validators[p_type](piece, position):
-            print("Validator returned false")
             return False
 
         return True
@@ -201,6 +207,7 @@ class Board:
 
         self.__white_turn = not self.__white_turn
         return True
+
 
     def __str__(self):
         ret_value = "\n   0  1  2  3  4  5  6  7\n"

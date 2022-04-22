@@ -15,7 +15,7 @@ def main():
             p1, p2 = user_input.split()
             p1 = (int(p1[0]), int(p1[1]))
             p2 = (int(p2[0]), int(p2[1]))
-            success = game.make_move(p1, p2)
+            success = game.attempt_move(p1, p2)
             
         print()
         

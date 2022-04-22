@@ -2,6 +2,7 @@ class Board:
     def __init__(self):
         self.__board = []
         self.__white_turn = True
+        self.__finished = False
 
         for i in range(8):
             self.__board.append(["__", "__", "__", "__", "__", "__", "__", "__"])
@@ -38,16 +39,17 @@ class Board:
                                  "b": self.bishop_move,
                                  "r": self.rook_move,
                                  "k": self.king_move,
-                                 "n": self.knight_move}
+                                 "n": self.knight_move,
+                                 "q": self.queen_move}
 
     # Checks if spaces between (x0,y0) and (x1,y1) are occupied
     def linear_open(self, p1, p2):
         dx = p2[0] - p1[0]
         dy = p2[1] - p1[1]
 
+        # Distance is how long the line is, x_step and y_step determine direction
         distance = 0
-        x_step = 0
-        y_step = 0
+        x_step, y_step = 0, 0
 
         if dx != 0:
             distance = dx - 1
@@ -56,8 +58,6 @@ class Board:
         if dy != 0:
             distance = dy - 1
             y_step = 1 if dy > 0 else -1
-
-        print(distance)
 
         current_pos = [p1[0], p1[1]]
         for _ in range(abs(distance)):
@@ -89,9 +89,13 @@ class Board:
                 print("Pawn can only move one tile forward")
             return False
 
-        if (dy == direction * 2) and dx != 0:
-            print("Captures can't be made from two tiles away")
-            return False
+        if dy == direction * 2:
+            if dx != 0:
+                print("Captures can't be made from two tiles away")
+                return False
+            if self.__board[p2_y - direction][p2_x] != "__":
+                print("Can't jump over pieces!")
+                return False
 
         p2_piece = self.__board[p2_y][p2_x]
 
@@ -111,7 +115,6 @@ class Board:
             return False
 
         return True
-
 
     def queen_move(self, p1, p2):
         # queen can move like a bishop or a rook
@@ -156,7 +159,6 @@ class Board:
             return True
         else: return False
 
-
     def knight_move(self, p1, p2):
         p1_x, p2_x = p1[0], p2[0]
         p1_y, p2_y = p1[1], p2[1]
@@ -167,6 +169,42 @@ class Board:
             elif abs(p2_y-p1_y) == 1 and abs(p2_x-p1_x) == 2:
                 return True
         else: return False
+
+    # Determine if this move causes the king to be in check
+    # This is a brute force method, and so it surely isn't efficient. Oh well
+    def test_check(self, p1, p2):
+        check_found = False
+        x1, y1 = p1[0], p1[1]
+        x2, y2 = p2[0], p2[1]
+
+        piece1 = self.__board[y1][x1]
+        piece2 = self.__board[y2][x2]
+        self.__board[y1][x1] = "__"
+        self.__board[y2][x2] = piece1
+
+        # Find King
+        kx, ky = -1, -1
+        for y, row in enumerate(self.__board):
+            if kx != -1 and ky != -1:
+                break
+            for x, piece in enumerate(row):
+                if piece[1] == "k" and piece[0] == ("w" if self.__white_turn else "b"):
+                    kx = x
+                    ky = y
+                    break
+
+        # See if any piece can capture the king
+        for y, row in enumerate(self.__board):
+            if check_found:
+                break
+            for x, piece in enumerate(row):
+                if self.validate_move((x, y), (kx, ky)):
+                    check_found = True
+                    break
+
+        self.__board[y1][x1] = piece1
+        self.__board[y2][x2] = piece2
+        return check_found
 
     def validate_move(self, piece, position):
         if piece == position:
@@ -197,17 +235,25 @@ class Board:
 
         return True
 
-    def make_move(self, piece, position):
+    def attempt_move(self, piece, position):
         if not self.validate_move(piece, position):
             return False
 
-        temp = self.__board[piece[1]][piece[0]]
+        if self.test_check(piece, position):
+            print("This move would leave the king in check")
+            return False
+
+        # Move and capture if a piece is in the way
+        p = self.__board[piece[1]][piece[0]]
         self.__board[piece[1]][piece[0]] = "__"
-        self.__board[position[1]][position[0]] = temp
+        self.__board[position[1]][position[0]] = p
+
+        # Pawn promotion
+        if p[1] == "p" and (position[1] == 0 or position[1] == 7):
+            self.__board[piece[1]][piece[0]] = p[0] + "q"
 
         self.__white_turn = not self.__white_turn
         return True
-
 
     def __str__(self):
         ret_value = "\n   0  1  2  3  4  5  6  7\n"

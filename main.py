@@ -1,23 +1,46 @@
-import pygame
 import board
 
 def main():
     game = board.Board()
-
+    l_dict = {
+      "A" : 0,
+      "B" : 1,
+      "C" : 2,
+      "D" : 3,
+      "E" : 4,
+      "F" : 5,
+      "G" : 6,
+      "H" : 7
+    }
+  
     continuing = True
     while continuing:
-        print(game)
-        user_input = input("Enter your move here")
-        if user_input == "STOP":
-            continuing = False
-            continue
-        else:
-            p1, p2 = user_input.split()
-            p1 = (int(p1[0]), int(p1[1]))
-            p2 = (int(p2[0]), int(p2[1]))
-            success = game.attempt_move(p1, p2)
-            
-        print()
+      print(game)
+      user_input = input("Enter your move here")
+      
+      if user_input == "STOP":
+        continuing = False
+        continue
+      else:
+        input_satisfied = False
+        while not input_satisfied:
+          p1,p2 = -1,-1
+          try:
+            coordinates = user_input.split()
+            if len(coordinates) != 2:
+              raise ValueError("Only Two Coordinates Expected")
+            inp_a,inp_b = coordinates
+            x1,x2 = l_dict[inp_a[0].upper()],l_dict[inp_b[0].upper()]
+            y1,y2 = 8 - int(inp_a[1]), 8 - int(inp_b[1])
+            p1 = (x1,y1)
+            p2 = (x2,y2)
+            input_satisfied = True
+          except:
+            user_input = input("Invalid input, try again!")
+        game.attempt_move(p1, p2)
+        print(game.get_message())
+          
+      print()
         
 
 if __name__ == '__main__':

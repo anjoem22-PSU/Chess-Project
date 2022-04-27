@@ -41,6 +41,7 @@ def main():
         message = game.get_message()
         print(message)
         if message == "Checkmate!" or message == "Stalemate!":
+          print(game)
           user_input = input("Want to play again? (y/n)")
           if user_input.lower()[0] == "y":
             del game

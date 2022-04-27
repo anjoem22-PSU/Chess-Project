@@ -42,14 +42,13 @@ class Board:
                                "k": self.king_move,
                                "n": self.knight_move,
                                "q": self.queen_move}
-
       # The following lists store special positions for white [0] and black [1]
       # Store king positions for speed
       self.king_positions = [(4,7),(4,0)]
       # Store positions where en passant can happen
       self.passant_tiles = []
       # Keep track of if king or rook tiles moved
-      # In order of kingside,queenside for white then black
+      # In order of queenside,kingside for white then black
       self.can_castle = [True,True,True,True]
 
     # Checks if spaces between (x0,y0) and (x1,y1) are occupied
@@ -62,15 +61,15 @@ class Board:
       x_step, y_step = 0, 0
 
       if dx != 0:
-        distance = dx - 1
+        distance = abs(dx) - 1
         x_step = 1 if dx > 0 else -1
 
       if dy != 0:
-        distance = dy - 1
+        distance = abs(dy) - 1
         y_step = 1 if dy > 0 else -1
 
       current_pos = [p1[0], p1[1]]
-      for _ in range(abs(distance)):
+      for _ in range(distance):
         current_pos[0] += x_step
         current_pos[1] += y_step
 
@@ -139,8 +138,34 @@ class Board:
     def king_move(self, p1, p2):
       p1_x, p2_x = p1[0], p2[0]
       p1_y, p2_y = p1[1], p2[1]
+
+      king = self.__board[p1_y][p1_x]
+      other = self.__board[p2_y][p2_x]
+
+      # Castling Conditions
+      if other == king[0] + "r":
+        castle_index = (0 if king[0] == "w" else 2) + (0 if p2_x == 0 else 1)
+        direction = 0
+        if self.can_castle[castle_index] == False:
+          self.message = "Cannot castle due to either the king or the rook moving already"
+          return False
+        if p2_x == 0:
+          direction += 1
+        elif p2_x == 7:
+          direction -= 1
+        else:
+          self.message = "Can't capture your own rook!"
+          return False
+        if not self.linear_open(p1,p2):
+          self.message = "There must be empty tiles between the rook and king"
+          return False
+        if self.test_threatened(p1) or self.test_threatened((p1_x+direction,p1_y)) or self.test_threatened((p1_x+2*direction,p1_y)):
+          self.message = "Cannot castle through check"
+          return False
+        return True
+      
       #check whether the p2 square is empty or if there's an opposite color piece
-      if self.__board[p2_y][p2_x] == "__" or self.__board[p2_y][p2_x][0] != self.__board[p1_y][p1_x][0]:
+      if other == "__" or other[0] != king[0]:
           # the king can move 1 square in any direction
           if abs(p2_y - p1_y) > 1 or abs(p2_x - p1_x) > 1:
             return False
@@ -208,6 +233,8 @@ class Board:
           value = state[1]
           if key == "Passant":
             self.passant_tiles = value
+          if key == "Castle":
+            self.can_castle = value
         else:
           position = state[0]
           piece = state[1]
@@ -223,20 +250,43 @@ class Board:
       x1, y1 = p1[0], p1[1]
       x2, y2 = p2[0], p2[1]
 
+      # Record of changes
       passant_pos = None
       piece1 = self.__board[y1][x1]
       piece2 = self.__board[y2][x2]
+
+      # Swap pieces
       self.__board[y1][x1] = "__"
       self.__board[y2][x2] = piece1
 
+       # Castling
+      if piece1[1] == "k" and piece2[1] == "r" and piece1[0] == piece2[0]:
+        self.__board[y2][x2] = "__"
+        if x2 == 0:
+          self.__board[y2][2] = piece1
+          self.__board[y2][3] = piece2
+          old_states.append(((2,y2),"__"))
+          old_states.append(((3,y2),"__"))
+        elif x2 == 7:
+          self.__board[y2][6] = piece1
+          self.__board[y2][5] = piece2
+          old_states.append(((5,y2),"__"))
+          old_states.append(((6,y2),"__"))
+      
+      # Special Pawn Movements
       if piece1[1] == "p":
+        #Promotion
         if (y2 == 0 or y2 == 7):
           self.__board[y2][x2] = piece1[0] + "q"
+
+        # Record possibilty to engage with en passant
         elif (abs(y2 - y1) == 2):
           if y2 == 4:
             passant_pos = (x2,5)
           elif y2 == 3:
             passant_pos = (x2,2)
+
+        # En passant move
         elif (piece2 == "__" and abs(x2 - x1) == 1):
           if y2 == 5:
             old_states.append(((x2,4),(self.__board[4][x2])))
@@ -244,20 +294,69 @@ class Board:
           elif y2 == 2:
             old_states.append(((x2,3),(self.__board[3][x2])))
             self.__board[3][x2] = "__"
-      
-      if piece2 == "bk":
+
+      # Keep track of king movements and eliminate castling ability
+      if piece1 == "bk":
+        old_states.append(("Castle",self.can_castle[:]))
         self.king_positions[1] = p2
-      if piece2 == "wk":
+        self.can_castle[2] = False
+        self.can_castle[3] = False
+      if piece1 == "wk":
+        old_states.append(("Castle",self.can_castle[:]))
         self.king_positions[0] = p2
-      
+        self.can_castle[0] = False
+        self.can_castle[1] = False
+        
+      # Moving rooks revokes castling rights
+      if piece1[1] == "r":
+        old_states.append(("Castle",self.can_castle[:]))
+        if piece1[0] == "w":
+          if x1 == 0:
+            self.can_castle[0] = False
+          elif x1 == 7:
+            self.can_castle[1] = False
+        elif piece1[0] == "b":
+          if x1 == 0:
+            self.can_castle[2] = False
+          elif x1 == 7:
+            self.can_castle[3] = False
+
+      # Capturing rooks removes the ability to castle on that side
+      if piece2[1] == "r":
+        old_states.append(("Castle",self.can_castle[:]))
+        if piece2[0] == "w":
+          if x2 == 0:
+            self.can_castle[0] = False
+          elif x2 == 7:
+            self.can_castle[1] = False
+        elif piece2[0] == "b":
+          if x2 == 0:
+            self.can_castle[2] = False
+          elif x2 == 7:
+            self.can_castle[3] = False
+
+      # Generate list of changes
       if passant_pos:
         old_states.append(("Passant",self.passant_tiles[:]))
         self.passant_tiles.append(passant_pos)
-        
       old_states.append((p1,piece1))
       old_states.append((p2,piece2))
+      
       return old_states
 
+    # This goes through every piece and checks if the passed tile is in check
+    def test_threatened(self,tile):
+      self.__white_turn = not self.__white_turn
+      
+      for y, row in enumerate(self.__board):
+          for x, piece in enumerate(row):
+            if self.validate_move((x, y), (tile[0], tile[1])):
+              self.__white_turn = not self.__white_turn
+              return True
+              
+      self.__white_turn = not self.__white_turn
+      return False
+      
     # Determine if this move causes the king to be in check
     # This is a brute force method, and so it surely isn't efficient. Oh well
     def test_check(self, p1, p2):
@@ -268,20 +367,32 @@ class Board:
       kx,ky = self.king_positions[0 if self.__white_turn else 1]
 
       # See if any piece can capture the king
-      self.__white_turn = not self.__white_turn
-      for y, row in enumerate(self.__board):
-          if check_found:
-              break
-          for x, piece in enumerate(row):
-            if self.validate_move((x, y), (kx, ky)):
-                check_found = True
-                break
-      self.__white_turn = not self.__white_turn
+      check_found = self.test_threatened((kx,ky))
       
       self.undo_state(old_states)
         
       return check_found
 
+    #  This is probably the biggest offender, as it just brute force checks everywhere
+    def moves_left(self):
+      moveable_pieces = []
+
+      # Find all piece of our team
+      for y,row in enumerate(self.__board):
+        for x,piece in enumerate(row):
+          if (piece[0] == "w" and self.__white_turn) or (piece[0] == "b" and not self.__white_turn):
+            moveable_pieces.append((x,y))
+
+      # Look at each tile and see if any of our team's tiles can move there
+      for y in range(len(self.__board)):
+        for x in range(len(row)):
+          for piece in moveable_pieces:
+            if self.validate_move(piece,(x,y)):
+              return True
+
+      # This message should never show up
+      self.message = "No moves left"
+      return False
     def validate_move(self, piece, position):
       if piece == position:
         self.__message = "No move was made"
@@ -329,7 +440,18 @@ class Board:
       for position in self.passant_tiles:
         if (position[1] == 2 and not self.__white_turn) or (position[1] == 5 and self.__white_turn):
           self.passant_tiles.remove(position)
-    
+
+      # If there are no moves for the opponent, they are either in a mate
+      current_message = self.__message
+      if not self.moves_left():
+        k_pos = self.king_positions[0 if self.__white_turn else 1]
+        if self.test_threatened(k_pos):
+          self.__message = "Checkmate!"
+        else:
+          self.__message = "Stalemate!"
+      else:
+        self.__message = current_message
+      
       return True
 
     def __str__(self):

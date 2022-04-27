@@ -1,47 +1,56 @@
 class Board:
     def __init__(self):
-        self.__board = []
-        self.__white_turn = True
-        self.__finished = False
-        self.__message = "Game Started!"
-      
-        for i in range(8):
-            self.__board.append(["__", "__", "__", "__", "__", "__", "__", "__"])
+      self.__board = []
+      self.__white_turn = True
+      self.__finished = False
+      self.__message = "Game Started!"
+    
+      for i in range(8):
+          self.__board.append(["__", "__", "__", "__", "__", "__", "__", "__"])
 
-        # Creates the pawns
-        for i in range(8):
-            self.__board[1][i] = "bp"
+      # Creates the pawns
+      for i in range(8):
+          self.__board[1][i] = "bp"
 
-        for i in range(8):
-            self.__board[6][i] = "wp"
+      for i in range(8):
+          self.__board[6][i] = "wp"
 
-        # Fill the rest of the pieces
-        b_row = self.__board[0]
-        b_row[0] = "br"
-        b_row[1] = "bn"
-        b_row[2] = "bb"
-        b_row[3] = "bq"
-        b_row[4] = "bk"
-        b_row[5] = "bb"
-        b_row[6] = "bn"
-        b_row[7] = "br"
+      # Fill the rest of the pieces
+      b_row = self.__board[0]
+      b_row[0] = "br"
+      b_row[1] = "bn"
+      b_row[2] = "bb"
+      b_row[3] = "bq"
+      b_row[4] = "bk"
+      b_row[5] = "bb"
+      b_row[6] = "bn"
+      b_row[7] = "br"
 
-        w_row = self.__board[7]
-        w_row[0] = "wr"
-        w_row[1] = "wn"
-        w_row[2] = "wb"
-        w_row[3] = "wq"
-        w_row[4] = "wk"
-        w_row[5] = "wb"
-        w_row[6] = "wn"
-        w_row[7] = "wr"
+      w_row = self.__board[7]
+      w_row[0] = "wr"
+      w_row[1] = "wn"
+      w_row[2] = "wb"
+      w_row[3] = "wq"
+      w_row[4] = "wk"
+      w_row[5] = "wb"
+      w_row[6] = "wn"
+      w_row[7] = "wr"
 
-        self.piece_validators = {"p": self.pawn_move,
-                                 "b": self.bishop_move,
-                                 "r": self.rook_move,
-                                 "k": self.king_move,
-                                 "n": self.knight_move,
-                                 "q": self.queen_move}
+      self.piece_validators = {"p": self.pawn_move,
+                               "b": self.bishop_move,
+                               "r": self.rook_move,
+                               "k": self.king_move,
+                               "n": self.knight_move,
+                               "q": self.queen_move}
+
+      # The following lists store special positions for white [0] and black [1]
+      # Store king positions for speed
+      self.king_positions = [(4,7),(4,0)]
+      # Store positions where en passant can happen
+      self.passant_tiles = []
+      # Keep track of if king or rook tiles moved
+      # In order of kingside,queenside for white then black
+      self.can_castle = [True,True,True,True]
 
     # Checks if spaces between (x0,y0) and (x1,y1) are occupied
     def linear_open(self, p1, p2):
@@ -103,8 +112,14 @@ class Board:
       if dx == 0 and p2_piece != "__":
         self.__message = "You cannot cardinally capture a piece with a pawn"
         return False
-      
-      if abs(dx) == 1 and (p2_piece == "__" or p2_piece[0] == color):
+
+      can_passant = False
+      for passant in self.passant_tiles:
+        if p2 == passant:
+          can_passant = True
+          break
+    
+      if abs(dx) == 1 and ((p2_piece == "__" and not can_passant) or p2_piece[0] == color):
         self.__message = "Either you tried to capture an empty tile or your own team's pawn"
         return False
       
@@ -185,40 +200,72 @@ class Board:
           self.__message = "Cannot capture your own pieces"
           return False
 
+    # Pass in values returned from swap_pieces to revert the move
+    def undo_state(self, move_list):
+      for state in move_list:
+        if type(state[0]) == str:
+          key = state[0]
+          value = state[1]
+          if key == "Passant":
+            self.passant_tiles = value
+        else:
+          position = state[0]
+          piece = state[1]
+          self.__board[position[1]][position[0]] = piece
+          if piece == "bk":
+            self.king_positions[1] = position
+          if piece == "wk":
+            self.king_positions[0] = position
+          
     # This swaps two pieces and returns a list of edited pieces with their previous state
     def swap_pieces(self,p1,p2):
       old_states = []
       x1, y1 = p1[0], p1[1]
       x2, y2 = p2[0], p2[1]
 
+      passant_pos = None
       piece1 = self.__board[y1][x1]
       piece2 = self.__board[y2][x2]
       self.__board[y1][x1] = "__"
       self.__board[y2][x2] = piece1
 
-      if piece1[1] == "p" and (y2 == 0 or y2 == 7):
-        self.__board[y2][x2] = piece1[0] + "q"
-
+      if piece1[1] == "p":
+        if (y2 == 0 or y2 == 7):
+          self.__board[y2][x2] = piece1[0] + "q"
+        elif (abs(y2 - y1) == 2):
+          if y2 == 4:
+            passant_pos = (x2,5)
+          elif y2 == 3:
+            passant_pos = (x2,2)
+        elif (piece2 == "__" and abs(x2 - x1) == 1):
+          if y2 == 5:
+            old_states.append(((x2,4),(self.__board[4][x2])))
+            self.__board[4][x2] = "__"
+          elif y2 == 2:
+            old_states.append(((x2,3),(self.__board[3][x2])))
+            self.__board[3][x2] = "__"
+      
+      if piece2 == "bk":
+        self.king_positions[1] = p2
+      if piece2 == "wk":
+        self.king_positions[0] = p2
+      
+      if passant_pos:
+        old_states.append(("Passant",self.passant_tiles[:]))
+        self.passant_tiles.append(passant_pos)
+        
       old_states.append((p1,piece1))
       old_states.append((p2,piece2))
       return old_states
-          
+
     # Determine if this move causes the king to be in check
     # This is a brute force method, and so it surely isn't efficient. Oh well
     def test_check(self, p1, p2):
       check_found = False
       old_states = self.swap_pieces(p1,p2)
     
-      # Find King
-      kx, ky = -1, -1
-      for y, row in enumerate(self.__board):
-          if kx != -1 and ky != -1:
-              break
-          for x, piece in enumerate(row):
-              if piece[1] == "k" and piece[0] == ("w" if self.__white_turn else "b"):
-                  kx = x
-                  ky = y
-                  break
+      # Get king's position
+      kx,ky = self.king_positions[0 if self.__white_turn else 1]
 
       # See if any piece can capture the king
       self.__white_turn = not self.__white_turn
@@ -231,10 +278,7 @@ class Board:
                 break
       self.__white_turn = not self.__white_turn
       
-      for state in old_states:
-        position = state[0]
-        piece = state[1]
-        self.__board[position[1]][position[0]] = piece
+      self.undo_state(old_states)
         
       return check_found
 
@@ -273,14 +317,20 @@ class Board:
       return True
 
     def attempt_move(self, piece, position):
-        if not self.validate_move(piece, position):
-          return False
+      if not self.validate_move(piece, position):
+        return False
 
-        # Actually move pieces, change to the other player's turn
-        self.swap_pieces(piece,position)
-        self.__white_turn = not self.__white_turn
-        self.__message = "Move successful"
-        return True
+      # Actually move pieces, change to the other player's turn
+      self.swap_pieces(piece,position)
+      self.__white_turn = not self.__white_turn
+      self.__message = "Move successful"
+
+      # Remove ability to en passant if not taken
+      for position in self.passant_tiles:
+        if (position[1] == 2 and not self.__white_turn) or (position[1] == 5 and self.__white_turn):
+          self.passant_tiles.remove(position)
+    
+      return True
 
     def __str__(self):
         ret_value = ""

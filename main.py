@@ -38,7 +38,16 @@ def main():
           except:
             user_input = input("Invalid input, try again!")
         game.attempt_move(p1, p2)
-        print(game.get_message())
+        message = game.get_message()
+        print(message)
+        if message == "Checkmate!" or message == "Stalemate!":
+          user_input = input("Want to play again? (y/n)")
+          if user_input.lower()[0] == "y":
+            del game
+            game = board.Board()
+          else:
+            print("Thanks for playing")
+            continuing = False
           
       print()
         

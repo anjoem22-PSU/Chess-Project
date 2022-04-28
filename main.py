@@ -1,5 +1,18 @@
 import board
 
+# List of commands to automatically run for debugging
+# DEBUG_LIST = [
+#   "A2 A3",
+#   "D7 D6",
+#   "A1 A2",
+#   "C8 E6",
+#   "A2 A1",
+#   "D8 D7",
+#   "A1 A2",
+#   "B8 A6",
+#   "A2 A1"
+# ]
+
 def main():
     game = board.Board()
     l_dict = {
@@ -16,7 +29,13 @@ def main():
     continuing = True
     while continuing:
       print(game)
-      user_input = input("Enter your move here")
+
+      # Comment out this code for debugging
+      # user_input = "NONE"
+      # if DEBUG_LIST:
+      #   user_input = DEBUG_LIST.pop(0)
+      # else:
+      user_input = input("Enter your move here: ")
       
       if user_input == "STOP":
         continuing = False

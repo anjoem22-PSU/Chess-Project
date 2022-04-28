@@ -146,21 +146,23 @@ class Board:
       if other == king[0] + "r":
         castle_index = (0 if king[0] == "w" else 2) + (0 if p2_x == 0 else 1)
         direction = 0
-        if self.can_castle[castle_index] == False:
-          self.message = "Cannot castle due to either the king or the rook moving already"
+        if not self.can_castle[castle_index]:
+          self.__message = "Cannot castle due to either the king or the rook moving already"
           return False
+          
         if p2_x == 0:
-          direction += 1
-        elif p2_x == 7:
           direction -= 1
+        elif p2_x == 7:
+          direction += 1
         else:
-          self.message = "Can't capture your own rook!"
+          self.__message = "Can't capture your own rook!"
           return False
+          
         if not self.linear_open(p1,p2):
-          self.message = "There must be empty tiles between the rook and king"
+          self.__message = "There must be empty tiles between the rook and king"
           return False
         if self.test_threatened(p1) or self.test_threatened((p1_x+direction,p1_y)) or self.test_threatened((p1_x+2*direction,p1_y)):
-          self.message = "Cannot castle through check"
+          self.__message = "Cannot castle through check"
           return False
         return True
       
@@ -168,8 +170,8 @@ class Board:
       if other == "__" or other[0] != king[0]:
           # the king can move 1 square in any direction
           if abs(p2_y - p1_y) > 1 or abs(p2_x - p1_x) > 1:
-            return False
             self.__message = "The king can only move one unit in any direction"
+            return False
           else: 
             return True
       else: 
@@ -267,11 +269,13 @@ class Board:
           self.__board[y2][3] = piece2
           old_states.append(((2,y2),"__"))
           old_states.append(((3,y2),"__"))
+          self.king_positions[0 if piece1[0] == "w" else 1] = (2,y2)
         elif x2 == 7:
           self.__board[y2][6] = piece1
           self.__board[y2][5] = piece2
           old_states.append(((5,y2),"__"))
           old_states.append(((6,y2),"__"))
+          self.king_positions[0 if piece1[0] == "w" else 1] = (6,y2)
       
       # Special Pawn Movements
       if piece1[1] == "p":
@@ -296,16 +300,16 @@ class Board:
             self.__board[3][x2] = "__"
 
       # Keep track of king movements and eliminate castling ability
-      if piece1 == "bk":
+      if piece1[1] == "k":
         old_states.append(("Castle",self.can_castle[:]))
-        self.king_positions[1] = p2
-        self.can_castle[2] = False
-        self.can_castle[3] = False
-      if piece1 == "wk":
-        old_states.append(("Castle",self.can_castle[:]))
-        self.king_positions[0] = p2
-        self.can_castle[0] = False
-        self.can_castle[1] = False
+        if piece1[0] == "w":
+          self.king_positions[0] = p2
+          self.can_castle[0] = False
+          self.can_castle[1] = False
+        else:
+          self.king_positions[1] = p2
+          self.can_castle[2] = False
+          self.can_castle[3] = False
         
       # Moving rooks revokes castling rights
       if piece1[1] == "r":
@@ -322,7 +326,7 @@ class Board:
             self.can_castle[3] = False
 
       # Capturing rooks removes the ability to castle on that side
-      if piece2[1] == "r":
+      if piece2[1] == "r" and not (piece1[1] == "k" and piece1[0] == piece2[0]):
         old_states.append(("Castle",self.can_castle[:]))
         if piece2[0] == "w":
           if x2 == 0:
@@ -341,7 +345,7 @@ class Board:
         self.passant_tiles.append(passant_pos)
       old_states.append((p1,piece1))
       old_states.append((p2,piece2))
-      
+
       return old_states
 
     # This goes through every piece and checks if the passed tile is in check
@@ -389,10 +393,11 @@ class Board:
           for piece in moveable_pieces:
             if self.validate_move(piece,(x,y)):
               return True
-
+    
       # This message should never show up
       self.message = "No moves left"
       return False
+      
     def validate_move(self, piece, position):
       if piece == position:
         self.__message = "No move was made"
@@ -450,8 +455,8 @@ class Board:
         else:
           self.__message = "Stalemate!"
       else:
-        self.__message = current_message
-      
+        self.__message = current_message 
+
       return True
 
     def __str__(self):
